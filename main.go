@@ -11,9 +11,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	cfg, err := config.Read(cfgFilePath)
+	config.SetUser(cfgFilePath, "pirdyla")
 	if err != nil {
 		panic(err)
 	}
+	cfg, _ := config.Read(cfgFilePath)
 	fmt.Printf("connection string is: %v\n", cfg.DbUrl)
+	fmt.Printf("username is: %v\n", cfg.CurrentUserName)
 }
