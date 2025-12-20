@@ -49,7 +49,7 @@ func (c *commands) register(name string, f func(*state, command) error) error {
 }
 
 func main() {
-	if len(os.Args) < 3 {
+	if len(os.Args) < 2 {
 		fmt.Println("not enough parameters!")
 		fmt.Println("gator <command> [arguments]")
 		os.Exit(1)
@@ -76,6 +76,10 @@ func main() {
 	cmds := commands{cmds: map[string]func(*state, command) error{}}
 	cmds.register("login", handlerLogin)
 	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerReset)
+	cmds.register("users", handlerUsers)
+	cmds.register("agg", handlerAgg)
+	cmds.register("addfeed", handlerAddFeed)
 
 	err = cmds.run(&s, cmd)
 	if err != nil {
