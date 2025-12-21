@@ -132,7 +132,7 @@ func handlerAgg(s *state, cmd command) error {
 	if err != nil {
 		return err
 	}
-	fmt.Print(feed)
+	printFeed(feed)
 	return nil
 }
 
