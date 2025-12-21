@@ -29,14 +29,12 @@ type commands struct {
 
 func (c *commands) run(s *state, cmd command) error {
 	fmt.Printf("running: %v\n with params %v\n", cmd.name, cmd.args)
+	fmt.Println()
 	if _, ok := c.cmds[cmd.name]; !ok {
 		return fmt.Errorf("command '%s' is not registered", cmd.name)
 	}
 	err := c.cmds[cmd.name](s, cmd)
-	if err != nil {
-		fmt.Printf("command returned an error: %v\n", err)
-	}
-	return nil
+	return err
 }
 
 func (c *commands) register(name string, f func(*state, command) error) error {
@@ -56,7 +54,7 @@ func main() {
 	}
 
 	cfgFilePath, err := config.GetConfigFilePath()
-	fmt.Printf("looking for cfg at: %v", cfgFilePath)
+	fmt.Printf("looking for cfg at: %v\n", cfgFilePath)
 	if err != nil {
 		panic(err)
 	}
@@ -65,7 +63,7 @@ func main() {
 	// initializing db
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatalf("failed to connect to db")
+		log.Fatalln("failed to connect to db")
 	}
 	dbQueries := database.New(db)
 
@@ -80,13 +78,15 @@ func main() {
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
 	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("feeds", handerFeeds)
 
 	err = cmds.run(&s, cmd)
 	if err != nil {
-		fmt.Printf("%v", err)
+		fmt.Printf("command returned an error: %v\n", err)
 	}
 
-	fmt.Printf("[connection string is: %v]\n", cfg.DbUrl)
-	fmt.Printf("[username is: %v]\n", cfg.CurrentUserName)
+	fmt.Println()
+	// fmt.Printf("[connection string is: %v]\n", cfg.DbUrl)
+	// fmt.Printf("[username is: %v]\n", cfg.CurrentUserName)
 
 }
