@@ -5,7 +5,6 @@
 package database
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,8 +12,8 @@ import (
 
 type Feed struct {
 	ID        uuid.UUID
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	Name      string
 	Url       string
 	UserID    uuid.UUID
@@ -30,7 +29,7 @@ type FeedFollow struct {
 
 type User struct {
 	ID        uuid.UUID
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	Name      string
 }

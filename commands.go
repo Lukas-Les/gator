@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -48,10 +47,7 @@ func handlerRegister(s *state, cmd command) error {
 	if err == nil {
 		log.Fatalln("user already exists")
 	}
-	t := sql.NullTime{
-		Time:  time.Now(),
-		Valid: true,
-	}
+	t := time.Now()
 	params := database.CreateUserParams{ID: uuid.New(), CreatedAt: t, UpdatedAt: t, Name: name}
 	_, err = s.db.CreateUser(context.Background(), params)
 	if err != nil {
@@ -145,10 +141,7 @@ func handlerAddFeed(s *state, cmd command) error {
 	if err != nil {
 		return fmt.Errorf("failure finding user: %w", err)
 	}
-	t := sql.NullTime{
-		Time:  time.Now(),
-		Valid: true,
-	}
+	t := time.Now()
 	params := database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: t,
@@ -161,11 +154,19 @@ func handlerAddFeed(s *state, cmd command) error {
 	if err != nil {
 		return err
 	}
+	followParams := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: t,
+		UpdatedAt: t,
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	}
+	s.db.CreateFeedFollow(context.Background(), followParams)
 	fmt.Print(feed)
 	return nil
 }
 
-func handerFeeds(s *state, cmd command) error {
+func handlerFeeds(s *state, cmd command) error {
 	feeds, err := s.db.GetFeeds(context.Background())
 	if err != nil {
 		return err
@@ -197,11 +198,11 @@ func handlerFollow(s *state, cmd command) error {
 	url := cmd.args[0]
 	currUser, err := s.db.GetUserByName(context.Background(), s.config.CurrentUserName)
 	if err != nil {
-		return errors.New(fmt.Sprintf("couldn't find user named '%s'", s.config.CurrentUserName))
+		return fmt.Errorf("couldn't find user named '%s'", s.config.CurrentUserName)
 	}
 	feed, err := s.db.GetFeedsByUrl(context.Background(), url)
 	if err != nil {
-		return errors.New(fmt.Sprintf("couldn't find feed for url '%s'", url))
+		return fmt.Errorf("couldn't find feed for url '%s'", url)
 	}
 	t := time.Now()
 	params := database.CreateFeedFollowParams{
@@ -216,5 +217,18 @@ func handlerFollow(s *state, cmd command) error {
 		return err
 	}
 	fmt.Printf("User '%s' followed '%s' feed", currUser.Name, feed.Name)
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command) error {
+	currUser, err := s.db.GetUserByName(context.Background(), s.config.CurrentUserName)
+	if err != nil {
+		log.Fatalln("failed to get user")
+	}
+	feeds, err := s.db.GetFeedFollowsForUser(context.Background(), currUser.ID)
+	fmt.Printf("User %s is following:\n", currUser.Name)
+	for _, feed := range feeds {
+		fmt.Printf("\t- %s\n", feed.FeedName)
+	}
 	return nil
 }
