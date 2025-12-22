@@ -189,3 +189,32 @@ func handerFeeds(s *state, cmd command) error {
 	}
 	return nil
 }
+
+func handlerFollow(s *state, cmd command) error {
+	if len(cmd.args) != 1 {
+		log.Fatalf("follow command takes 1 parameter: url")
+	}
+	url := cmd.args[0]
+	currUser, err := s.db.GetUserByName(context.Background(), s.config.CurrentUserName)
+	if err != nil {
+		return errors.New(fmt.Sprintf("couldn't find user named '%s'", s.config.CurrentUserName))
+	}
+	feed, err := s.db.GetFeedsByUrl(context.Background(), url)
+	if err != nil {
+		return errors.New(fmt.Sprintf("couldn't find feed for url '%s'", url))
+	}
+	t := time.Now()
+	params := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: t,
+		UpdatedAt: t,
+		UserID:    currUser.ID,
+		FeedID:    feed.ID,
+	}
+	_, err = s.db.CreateFeedFollow(context.Background(), params)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("User '%s' followed '%s' feed", currUser.Name, feed.Name)
+	return nil
+}
