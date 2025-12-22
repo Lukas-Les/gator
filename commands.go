@@ -132,15 +132,11 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 2 {
 		log.Fatalf("addfeed command takes 2 parameters: name and url")
 	}
 	name, url := cmd.args[0], cmd.args[1]
-	user, err := s.db.GetUserByName(context.Background(), s.config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("failure finding user: %w", err)
-	}
 	t := time.Now()
 	params := database.CreateFeedParams{
 		ID:        uuid.New(),
@@ -191,7 +187,7 @@ func handlerFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 1 {
 		log.Fatalf("follow command takes 1 parameter: url")
 	}
@@ -220,13 +216,12 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
-	currUser, err := s.db.GetUserByName(context.Background(), s.config.CurrentUserName)
+func handlerFollowing(s *state, cmd command, user database.User) error {
+	feeds, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
-		log.Fatalln("failed to get user")
+		log.Fatalln("failed to find feeds")
 	}
-	feeds, err := s.db.GetFeedFollowsForUser(context.Background(), currUser.ID)
-	fmt.Printf("User %s is following:\n", currUser.Name)
+	fmt.Printf("User %s is following:\n", user.Name)
 	for _, feed := range feeds {
 		fmt.Printf("\t- %s\n", feed.FeedName)
 	}
