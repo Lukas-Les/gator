@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -263,6 +264,33 @@ func scrapeFeeds(s *state) error {
 	fetched, err := fetchFeed(context.Background(), nextFeed.Url)
 	if err != nil {
 		return err
+	}
+	t := time.Now()
+	for _, item := range fetched.Channel.Item {
+		description := sql.NullString{String: item.Description, Valid: true}
+
+		pubAtAsTime, err := time.Parse(time.RFC1123Z, item.PubDate)
+		var pubAt sql.NullTime
+		if err != nil {
+			pubAt = sql.NullTime{}
+		} else {
+			pubAt = sql.NullTime{Time: pubAtAsTime, Valid: true}
+		}
+
+		params := database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   t,
+			UpdatedAt:   t,
+			Title:       item.Title,
+			Url:         fetched.Channel.Link,
+			Description: description,
+			PublishedAt: pubAt,
+			FeedID:      nextFeed.ID,
+		}
+		_, err = s.db.CreatePost(context.Background(), params)
+		if err != nil {
+			fmt.Printf("error occured while inserting posts: %s", err)
+		}
 	}
 	printFeed(fetched)
 	return nil
