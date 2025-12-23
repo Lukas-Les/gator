@@ -123,13 +123,19 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 }
 
 func handlerAgg(s *state, cmd command) error {
-	url := "https://www.wagslane.dev/index.xml"
-	feed, err := fetchFeed(context.Background(), url)
+	if len(cmd.args) != 1 {
+		log.Fatalf("agg command takes duration string as param, e.g. 1m")
+	}
+	timeBetweenReqs := cmd.args[0]
+	duration, err := time.ParseDuration(timeBetweenReqs)
 	if err != nil {
 		return err
 	}
-	printFeed(feed)
-	return nil
+	fmt.Printf("Collecting feeds every %s\n", duration.String())
+	ticker := time.NewTicker(duration)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {
@@ -245,5 +251,19 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func scrapeFeeds(s *state) error {
+	nextFeed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return err
+	}
+	s.db.MarkFeedFetched(context.Background(), nextFeed.ID)
+	fetched, err := fetchFeed(context.Background(), nextFeed.Url)
+	if err != nil {
+		return err
+	}
+	printFeed(fetched)
 	return nil
 }
