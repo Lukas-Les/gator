@@ -6,9 +6,11 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Lukas-Les/gator/internal/config"
@@ -293,5 +295,31 @@ func scrapeFeeds(s *state) error {
 		}
 	}
 	printFeed(fetched)
+	return nil
+}
+
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	var limit int
+	var err error
+	if len(cmd.args) != 1 {
+		limit, err = strconv.Atoi(cmd.args[0])
+		if err != nil {
+			return err
+		}
+	} else {
+		limit = 2
+	}
+	params := database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  int32(limit),
+	}
+	posts, err := s.db.GetPostsForUser(context.Background(), params)
+	if err != nil {
+		return err
+	}
+	for _, post := range posts {
+		desc := post.Description.String
+		fmt.Printf("Title: %s\nDescription: %s\n", html.UnescapeString(post.Title), html.UnescapeString(desc))
+	}
 	return nil
 }
