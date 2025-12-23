@@ -10,7 +10,7 @@ import (
 )
 
 const getFeedsByUrl = `-- name: GetFeedsByUrl :one
-SELECT id, created_at, updated_at, name, url, user_id FROM feeds
+SELECT id, created_at, updated_at, name, url, user_id, last_fetched_at FROM feeds
 WHERE url = $1
 ORDER BY created_at DESC
 `
@@ -25,6 +25,7 @@ func (q *Queries) GetFeedsByUrl(ctx context.Context, url string) (Feed, error) {
 		&i.Name,
 		&i.Url,
 		&i.UserID,
+		&i.LastFetchedAt,
 	)
 	return i, err
 }
